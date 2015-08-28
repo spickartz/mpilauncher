@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/cheggaaa/pb"
 	"github.com/olekukonko/tablewriter"
 	"math"
 	"os"
@@ -15,9 +16,9 @@ import (
 func run_cmd(params map[string]string) map[string]float64 {
 	// Start command and take the time
 	start_time := time.Now()
-	cmd := exec.Command(params["cmd"], params["args"])
+	cmd := exec.Command(params["cmd"], strings.Fields(params["args"])...)
 	output, err := cmd.Output()
-	duration := float64(time.Since(start_time)) / (1000 * 1000)
+	duration := float64(time.Since(start_time)) / (1000 * 1000 * 1000)
 
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR: Could not execute ", cmd, params["args"], err)
@@ -77,16 +78,16 @@ func aggregate_results(exec_results []map[string]float64) []string {
 func main() {
 
 	var commands = map[string]map[string]string{
-		"echo1": {
-			"cmd":         "echo",
-			"iterations":  "100",
-			"args":        "Time in seconds =                    2.18\n",
+		"SP.C.64 (sp/suspend_ib_integration)": {
+			"cmd":         "./ib_integration.sh",
+			"iterations":  "10",
+			"args":        "64 2,3 /home/pickartz/work/benchmarks/NPB/NPB3.3.1/NPB3.3-MPI/bin/sp.B.64",
 			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
 		},
-		"echo2": {
-			"cmd":         "echo",
-			"iterations":  "2",
-			"args":        "Time in seconds =                    2.18\n",
+		"SP.C.64 (master)": {
+			"cmd":         "./master.sh",
+			"iterations":  "10",
+			"args":        "64 2,3 /home/pickartz/work/benchmarks/NPB/NPB3.3.1/NPB3.3-MPI/bin/sp.B.64",
 			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
 		},
 	}
@@ -102,12 +103,16 @@ func main() {
 	// For all commands
 	for app, params := range commands {
 		iterations, _ := strconv.ParseInt(params["iterations"], 0, 64)
-		cur_results := make([]map[string]float64, iterations)
+		cur_results := make([]map[string]float64, 0)
 
 		// Perform requested iterations
+		fmt.Printf("STATUS: Executing '%s' ...\n", app)
+		progress_bar := pb.StartNew(int(iterations))
 		for i := int64(0); i < iterations; i++ {
 			cur_results = append(cur_results, run_cmd(params))
+			progress_bar.Increment()
 		}
+		progress_bar.FinishPrint("Done")
 
 		// Aggregate results
 		table_row := make([]string, 0)
