@@ -2,31 +2,31 @@ package main
 
 import (
 	"fmt"
-	"time"
-	"os"
-	"regexp"
-	"strings"
-	"strconv"
-	"os/exec"
-	"math"
 	"github.com/olekukonko/tablewriter"
+	"math"
+	"os"
+	"os/exec"
+	"regexp"
+	"strconv"
+	"strings"
+	"time"
 )
 
-func run_cmd(cmd_name string, params map[string]string) map[string]float64 {
+func run_cmd(params map[string]string) map[string]float64 {
 	// Start command and take the time
 	start_time := time.Now()
-	cmd := exec.Command(cmd_name, params["args"])
+	cmd := exec.Command(params["cmd"], params["args"])
 	output, err := cmd.Output()
-	duration := float64(time.Since(start_time))/(1000*1000)
-	
+	duration := float64(time.Since(start_time)) / (1000 * 1000)
+
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "ERROR: Could not execute ", cmd, params["args"], err)
 		os.Exit(1)
 	}
-	var result = map[string]float64 {
+	var result = map[string]float64{
 		"overall": duration,
-		"inner": math.NaN(),
-		"start": math.NaN(),
+		"inner":   math.NaN(),
+		"start":   math.NaN(),
 	}
 
 	if params["time_string"] == "" {
@@ -36,7 +36,7 @@ func run_cmd(cmd_name string, params map[string]string) map[string]float64 {
 	// Parse output
 	lines := strings.Split(string(output), "\n")
 	r := regexp.MustCompile(params["time_string"])
-	for _,line := range lines {
+	for _, line := range lines {
 		if match := r.FindStringSubmatch(line); len(match) > 0 {
 			runtime, err := strconv.ParseFloat(match[1], 64)
 			if err == nil {
@@ -61,14 +61,13 @@ func aggregate_results(exec_results []map[string]float64) []string {
 		start += cur_result["start"]
 	}
 
-
 	// Divide by iterations
 	overall /= float64(len(exec_results))
 	inner /= float64(len(exec_results))
 	start /= float64(len(exec_results))
 
-	var result  = []string {
-		strconv.FormatFloat(overall, 'f', 2, 64), 
+	var result = []string{
+		strconv.FormatFloat(overall, 'f', 2, 64),
 		strconv.FormatFloat(inner, 'f', 2, 64),
 		strconv.FormatFloat(start, 'f', 2, 64),
 	}
@@ -76,16 +75,19 @@ func aggregate_results(exec_results []map[string]float64) []string {
 }
 
 func main() {
-	
-	var commands = map[string]map[string]string {
-		"echo": {
-			"iterations": "1000",
-			"args": "Time in seconds =                    2.18\n",
+
+	var commands = map[string]map[string]string{
+		"echo1": {
+			"cmd":         "echo",
+			"iterations":  "100",
+			"args":        "Time in seconds =                    2.18\n",
 			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
 		},
-		"ls": {
-			"iterations": "1",
-			"args": ".",
+		"echo2": {
+			"cmd":         "echo",
+			"iterations":  "2",
+			"args":        "Time in seconds =                    2.18\n",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
 		},
 	}
 
@@ -101,10 +103,10 @@ func main() {
 	for app, params := range commands {
 		iterations, _ := strconv.ParseInt(params["iterations"], 0, 64)
 		cur_results := make([]map[string]float64, iterations)
-	
+
 		// Perform requested iterations
-		for i := int64(0); i<iterations; i++ {
-			cur_results = append(cur_results, run_cmd(app, params))
+		for i := int64(0); i < iterations; i++ {
+			cur_results = append(cur_results, run_cmd(params))
 		}
 
 		// Aggregate results
