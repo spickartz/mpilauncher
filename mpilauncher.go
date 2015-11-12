@@ -51,50 +51,202 @@ func run_cmd(params map[string]string) map[string]float64 {
 }
 
 func aggregate_results(exec_results []map[string]float64) []string {
-	overall := 0.0
-	inner := 0.0
-	start := 0.0
+	var overall = map[string]float64{
+		"avg": 0.0,
+		"var": 0.0,
+	}
+	var inner = map[string]float64{
+		"avg": 0.0,
+		"var": 0.0,
+	}
+	var start = map[string]float64{
+		"avg": 0.0,
+		"var": 0.0,
+	}
 
 	// Calculate sum
 	for _, cur_result := range exec_results {
-		overall += cur_result["overall"]
-		inner += cur_result["inner"]
-		start += cur_result["start"]
+		overall["avg"] += cur_result["overall"]
+		inner["avg"] += cur_result["inner"]
+		start["avg"] += cur_result["start"]
 	}
 
 	// Divide by iterations
-	overall /= float64(len(exec_results))
-	inner /= float64(len(exec_results))
-	start /= float64(len(exec_results))
+	overall["avg"] /= float64(len(exec_results))
+	inner["avg"] /= float64(len(exec_results))
+	start["avg"] /= float64(len(exec_results))
+
+	for _, cur_result := range exec_results {
+		overall["var"] += math.Pow(overall["avg"]-cur_result["overall"], 2)
+		inner["var"] += math.Pow(inner["avg"]-cur_result["inner"], 2)
+		start["var"] += math.Pow(start["avg"]-cur_result["start"], 2)
+	}
+
+	overall["stdev"] = math.Sqrt(overall["var"])
+	inner["stdev"] = math.Sqrt(inner["var"])
+	start["stdev"] = math.Sqrt(start["var"])
 
 	var result = []string{
-		strconv.FormatFloat(overall, 'f', 2, 64),
-		strconv.FormatFloat(inner, 'f', 2, 64),
-		strconv.FormatFloat(start, 'f', 2, 64),
+		strconv.FormatFloat(overall["avg"], 'f', 2, 64),
+		strconv.FormatFloat(overall["var"], 'f', 6, 64),
+		strconv.FormatFloat(overall["stdev"], 'f', 6, 64),
+		strconv.FormatFloat(inner["avg"], 'f', 2, 64),
+		strconv.FormatFloat(inner["var"], 'f', 6, 64),
+		strconv.FormatFloat(inner["stdev"], 'f', 6, 64),
+		strconv.FormatFloat(start["avg"], 'f', 2, 64),
+		strconv.FormatFloat(start["var"], 'f', 6, 64),
+		strconv.FormatFloat(start["stdev"], 'f', 6, 64),
 	}
 	return result
+}
+
+const runtime = 600.00
+
+func calc_iterations(exec_result map[string]float64) int64 {
+	app_run, _ := exec_result["overall"]
+
+	iterations := (runtime / app_run)
+	if iterations < 1 {
+		iterations = 1
+	}
+	return int64(iterations)
 }
 
 func main() {
 
 	var commands = map[string]map[string]string{
-		"SP.C.64 (sp/suspend_ib_integration)": {
-			"cmd":         "./ib_integration.sh",
+		"LU-MZ.C.4": {
+			"cmd":         "./npb_mz_launcher.sh",
 			"iterations":  "10",
-			"args":        "64 2,3 /home/pickartz/work/benchmarks/NPB/NPB3.3.1/NPB3.3-MPI/bin/sp.B.64",
+			"runtime":     "26",
+			"args":        "4 lu-mz.C.1",
 			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
 		},
-		"SP.C.64 (master)": {
-			"cmd":         "./master.sh",
+		"LU-MZ.C.9": {
+			"cmd":         "./npb_mz_launcher.sh",
 			"iterations":  "10",
-			"args":        "64 2,3 /home/pickartz/work/benchmarks/NPB/NPB3.3.1/NPB3.3-MPI/bin/sp.B.64",
+			"runtime":     "26",
+			"args":        "9 lu-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"LU-MZ.C.16": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "16 lu-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"LU-MZ.C.25": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "25 lu-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"LU-MZ.C.36": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "36 lu-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"LU-MZ.C.39": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "39 lu-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"SP-MZ.C.4": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "4 sp-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"SP-MZ.C.9": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "9 sp-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"SP-MZ.C.16": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "16 sp-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"SP-MZ.C.25": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "25 sp-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"SP-MZ.C.36": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "36 sp-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"SP-MZ.C.39": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "39 sp-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"BT-MZ.C.4": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "4 bt-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"BT-MZ.C.9": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "9 bt-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"BT-MZ.C.16": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "16 bt-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"BT-MZ.C.25": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "25 bt-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"BT-MZ.C.36": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "36 bt-mz.C.1",
+			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
+		},
+		"BT-MZ.C.39": {
+			"cmd":         "./npb_mz_launcher.sh",
+			"iterations":  "10",
+			"runtime":     "26",
+			"args":        "39 bt-mz.C.1",
 			"time_string": `Time in seconds\s=\s*(\d+\.\d+)`,
 		},
 	}
 
 	// Prepare output table
 	table := tablewriter.NewWriter(os.Stdout)
-	table.SetHeader([]string{"app", "outer", "inner", "startup"})
+	table.SetAlignment(tablewriter.ALIGN_RIGHT)
+	table.SetHeader([]string{"app", "outer", "var", "stdev", "inner", "var", "stdev", "startup", "var", "stdev"})
 	table.SetCenterSeparator("")
 	table.SetColumnSeparator("")
 	table.SetRowSeparator("")
@@ -102,8 +254,13 @@ func main() {
 
 	// For all commands
 	for app, params := range commands {
-		iterations, _ := strconv.ParseInt(params["iterations"], 0, 64)
+		// create result array
 		cur_results := make([]map[string]float64, 0)
+
+		//	iterations, _ := strconv.ParseInt(params["iterations"], 0, 64)
+		// Calc iterations based on one execution
+		cur_results = append(cur_results, run_cmd(params))
+		iterations := calc_iterations(cur_results[0])
 
 		// Perform requested iterations
 		fmt.Printf("STATUS: Executing '%s' ...\n", app)
@@ -120,7 +277,7 @@ func main() {
 		table_row = append(table_row, aggregate_results(cur_results)...)
 		table_content = append(table_content, table_row)
 	}
-
+	return
 	table.AppendBulk(table_content)
 	table.Render()
 }
